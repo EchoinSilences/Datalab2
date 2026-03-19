@@ -149,8 +149,7 @@ class Club():
             'points': points,
             'matches_played': len(matches)
         }
-
-        
+       
 class Player():
     """Simple player class (optional, kept for reference)"""
     def __init__(self, id, name, height, weight, overall_rating, potential, preffered_foot):
@@ -170,3 +169,112 @@ class Match():
         self.away_team_api_id = away_team_api_id
         self.home_team_goal = home_team_goal
         self.away_team_goal = away_team_goal
+        
+class Research():
+    """
+        Description:
+            Deze class bevat methoden voor het uitvoeren van onderzoek en analyses op de club data.
+            
+        Attributes:
+            Data    
+        
+        Methods:
+            correlation_analysis(club): 
+                Voert een correlatieanalyse uit op de performance van het team in een seizoen.
+                
+            player_analysis(club): 
+                Voert een analyse uit op de spelers van het team, zoals gemiddelde ratings en attributen.
+                
+            match_analysis(club):
+                Voert een analyse uit op de wedstrijden van het team, zoals doelpunten per wedstrijd en resultaten.      
+    """
+    
+    def init(self, data):
+        self.data = data
+          
+    def correlation_analysis(self, club, season):
+        """
+            Description:
+                Voert een correlatieanalyse uit op de performance van het team in een seizoen.
+                
+            Args:
+                self: Het Research object.
+                club: Het Club object.
+                season: Het seizoen om te analyseren (bijv. '2015/2016').
+                
+            Returns:
+                Correlatiematrix als DataFrame.
+        """
+        season_matches = club.get_season_matches(season)
+        
+        if season_matches.empty:
+            print(f'Geen matches gevonden voor {club.team_name} in season {season}.')
+            return pd.DataFrame()
+        
+        # Selecteer relevante kolommen voor correlatieanalyse
+        relevant_columns = ['home_team_goal', 'away_team_goal', 'home_team_shots', 'away_team_shots', 'home_team_possession', 'away_team_possession']
+        correlation_data = season_matches[relevant_columns]
+        correlation_matrix = correlation_data.corr().sort_values(ascending=False)
+        
+        return correlation_matrix
+    
+    def player_analysis(self, club):
+        """
+            Description:
+                Voert een analyse uit op de spelers van het team, zoals gemiddelde ratings en attributen.
+                
+            Args:
+                self: Het Research object.
+                club: Het Club object.
+                
+            Returns:
+                DataFrame met gemiddelde ratings en attributen van spelers.
+        """
+        if club.players_df.empty:
+            print(f'Geen spelers gevonden voor {club.team_name}.')
+            return pd.DataFrame()
+        
+        # Bereken gemiddelde ratings en attributen
+        player_avg_stats = club.players_df.groupby('player_api_id').agg({
+            'overall_rating': 'mean',
+            'potential': 'mean',
+            'height': 'mean',
+            'weight': 'mean'
+        }).reset_index()
+        
+        return player_avg_stats
+    
+    def match_analysis(self, club):
+        """
+            Description:
+                Voert een analyse uit op de wedstrijden van het team, zoals doelpunten per wedstrijd en resultaten.
+                
+            Args:
+                self: Het Research object.
+                club: Het Club object.
+                
+            Returns:
+                DataFrame met analyse van wedstrijden, zoals doelpunten per wedstrijd en resultaten.
+        """
+        
+        if club.matches_df.empty:
+            print(f'Geen matches gevonden voor {club.team_name}.')
+            return pd.DataFrame()
+        
+        # Bereken doelpunten per wedstrijd en resultaten
+        club.matches_df['total_goals'] = club.matches_df['home_team_goal'] + club.matches_df['away_team_goal']
+        club.matches_df['result'] = np.where(
+                                        (club.matches_df['home_team_api_id'] == club.team_id) & 
+                                        (club.matches_df['home_team_goal'] > club.matches_df['away_team_goal']), 'win',
+                                    np.where(
+                                        (club.matches_df['away_team_api_id'] == club.team_id) & 
+                                        (club.matches_df['away_team_goal'] > club.matches_df['home_team_goal']), 'win', 
+                                    np.where(
+                                        club.matches_df['home_team_goal'] == club.matches_df['away_team_goal'],  'draw',
+                                                                                                                 'loss'
+                                        )
+                                    )
+                                )
+        
+        return club.matches_df[['match_id', 'season', 'total_goals', 'result']]
+        
