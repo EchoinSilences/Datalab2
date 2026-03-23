@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datalab2"
+version = "0.1.0"
+description = "Football match prediction analysis"
+authors = [{name = "Datalab2 Team"}]
+requires-python = ">=3.8"
+dependencies = [
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "kaggle",
+]
+
+[tool.setuptools]
+packages = ["modules"]
